@@ -18,51 +18,63 @@ form.addEventListener('submit', e => {
     e.preventDefault();
 });
 
-//Canvas chart
-let dataPoints = [
-    { label: 'Uche', y: 0 },
-    { label: 'Ike', y: 0 },
-    { label: 'Latifa', y: 0 },
-    { label: 'Nana', y:0},
-];
+fetch('http://localhost:3000/vote')
+.then(res => res.json())
+.then(data => {
+    const votes = data.votes;
+    const totalVotes = votes.length;
+    //Count vote points - acc/current
+    const voteCounts = votes.reduce((acc, vote) => (acc[vote.president] = 
+        ((acc[vote.president] || 0) + parseInt(vote.points)), acc), {});
+       
+    //Canvas chart
+    let dataPoints = [
+        { label: 'Uche', y: voteCounts.Uche },
+        { label: 'Ike', y: voteCounts.Ike },
+        { label: 'Latifa', y: voteCounts.Latifa },
+        { label: 'Nana', y: voteCounts.Nana }
+    ];
 
-const chartContainer = document.querySelector('#chartContainer');
+    const chartContainer = document.querySelector('#chartContainer');
 
-if(chartContainer){
-    const chart = new CanvasJS.Chart('chartContainer', {
-        animationEnabled: true,
-        theme: 'theme1',
-        title: {
-            text: `Voting Results`
-        },
-        data: [
-            {
-                type: 'column',
-                dataPoints: dataPoints
-            }
-        ]
-    });
-    chart.render();
-
-    Pusher.logToConsole = true;
-
-    var pusher = new Pusher('523a5394bb28b6882a6e', {
-    cluster: 'eu',
-    encrypted: true
-    });
-
-    var channel = pusher.subscribe('cdss-vote');
-    channel.bind('president-vote', function(data) {
-        dataPoints = dataPoints.map(x => {
-            if(x.label == data.president) {
-                x.y += data.points;
-                return x;
-            } else{
-                return x;
-            }
+    if(chartContainer){
+        const chart = new CanvasJS.Chart('chartContainer', {
+            animationEnabled: true,
+            theme: 'theme1',
+            title: {
+                text: `Voting Results`
+            },
+            data: [
+                {
+                    type: 'column',
+                    dataPoints: dataPoints
+                }
+            ]
         });
         chart.render();
-    });
-} 
+
+        Pusher.logToConsole = true;
+
+        var pusher = new Pusher('523a5394bb28b6882a6e', {
+        cluster: 'eu',
+        encrypted: true
+        });
+
+        var channel = pusher.subscribe('cdss-vote');
+        channel.bind('president-vote', function(data) {
+            dataPoints = dataPoints.map(x => {
+                if(x.label == data.president) {
+                    x.y += data.points;
+                    return x;
+                } else{
+                    return x;
+                }
+            });
+            chart.render();
+        });
+    } 
+
+});
+
 
     
